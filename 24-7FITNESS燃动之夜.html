@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24/7 FITNESS 燃动之夜 - 独立智控现场大屏导播系统</title>
+    <style>
+        /* 全局未来感复位 - 严格禁用斜体 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            font-style: normal !important; /* 调整4：严禁任何元素出现斜体 */
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #010505;
+            overflow: hidden;
+        }
+
+        /* 🎬 16:9 画布锁定器 */
+        #telemetry-stage {
+            position: absolute;
+            width: 1920px;
+            height: 1080px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transform-origin: center center;
+            background-color: #030909;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center;
+            border: 2px solid rgba(0, 243, 255, 0.15);
+        }
+
+        /* 🚀 差异化多轨缓动转场系统（1.0秒平滑大屏节奏） */
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            visibility: hidden;
+            transition: 
+                opacity 1.0s cubic-bezier(0.16, 1, 0.3, 1), 
+                transform 1.0s cubic-bezier(0.16, 1, 0.3, 1), 
+                filter 1.0s cubic-bezier(0.16, 1, 0.3, 1),
+                visibility 1.0s;
+            padding: 140px 100px;
+        }
+
+        /* 每页独立入场弧度 */
+        .slide.p1-transition { transform: scale(1.05); filter: blur(20px); } 
+        .slide.p2-transition { transform: translateX(120px); filter: blur(10px); } 
+        .slide.p3-transition { transform: translateY(-120px); filter: contrast(1.5); } 
+        .slide.p4-transition { transform: scale(1.3); filter: brightness(2) blur(10px); } 
+        .slide.p5-transition { transform: translateX(-120px); } 
+        .slide.p6-transition { transform: translateY(150px); filter: blur(8px); } 
+        .slide.p7-transition { transform: scale(0.85); filter: blur(12px); } 
+        .slide.p8-transition { transform: scale(1.2); } 
+        .slide.p9-transition { transform: translate(60px, 60px); filter: blur(15px); } 
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(0) scale(1);
+            filter: blur(0px) brightness(1) contrast(1);
+        }
+
+        .slide.theme-dark { background-color: #030808; }
+        .slide.theme-cyan-pulse { background-color: #2ecbc8; }
+
+        /* ⚡ HUD 常驻头部组件 */
+        .hud-header-container {
+            position: absolute;
+            top: 55px;
+            left: 80px;
+            right: 80px;
+            height: 60px;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+            pointer-events: none;
+        }
+        .theme-cyan-pulse .hud-header-container { border-bottom-color: rgba(4, 13, 13, 0.2); }
+        
+        .hud-logo-area {
+            float: left;
+            height: 100%;
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: 5px;
+            color: #00f3ff;
+            pointer-events: auto;
+        }
+        .theme-cyan-pulse .hud-logo-area { color: #040d0d; }
+        .hud-logo-img {
+            height: 42px;
+            vertical-align: middle;
+            margin-right: 15px;
+            margin-top: -6px;
+        }
+        .hud-telemetry-data {
+            float: right;
+            font-size: 14px;
+            letter-spacing: 4px;
+            color: rgba(0, 243, 255, 0.6);
+            margin-top: 6px;
+        }
+        .theme-cyan-pulse .hud-telemetry-data { color: #040d0d; font-weight: 900; }
+
+        /* 未来机能面板装饰 */
+        .tech-corner-frame {
+            border: 2px solid #00f3ff;
+            background: rgba(0, 243, 255, 0.01);
+            position: relative;
+            clip-path: polygon(0 0, 96% 0, 100% 4%, 100% 100%, 4% 100%, 0 96%);
+        }
+        .telemetry-cross { position: absolute; color: #00f3ff; font-size: 20px; opacity: 0.25; }
+
+        .font-sport-bold {
+            font-size: 100px;
+            font-weight: 900;
+            text-transform: uppercase;
+            line-height: 1;
+            letter-spacing: -1px;
+            color: #ffffff;
+        }
+        .font-sport-cyan {
+            color: #00f3ff;
+            text-shadow: 0 0 30px rgba(0, 243, 255, 0.5);
+        }
+
+        /* 13位入围者数码卡片网格 */
+        .matrix-container {
+            width: 100%;
+            text-align: center;
+            margin-top: 40px;
+        }
+        .nominee-digital-cell {
+            width: 205px;
+            height: 285px;
+            border: 2px solid rgba(0, 243, 255, 0.3);
+            background: rgba(0, 243, 255, 0.02);
+            margin: 8px;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .nominee-row {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        .nominee-digital-cell img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .cell-hud-index {
+            position: absolute;
+            top: 0; left: 0;
+            background: #00f3ff;
+            color: #030909;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 2px 8px;
+            z-index: 2;
+        }
+
+        .winner-frame-3 {
+            display: inline-block;
+            width: 380px;
+            height: 500px;
+            border: 3px solid #ffffff;
+            background: rgba(255,255,255,0.03);
+            position: relative;
+        }
+        .winner-frame-3 img { width: 100%; height: 100%; object-fit: cover; }
+        .award-wrapper {
+            display: inline-block;
+            margin: 0 14px;
+            text-align: center;
+            vertical-align: top;
+        }
+        .award-label {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: #00f3ff;
+            margin-bottom: 12px;
+            text-shadow: 0 0 15px rgba(0,243,255,0.4);
+        }
+        .award-label-line {
+            width: 60px;
+            height: 1px;
+            background: rgba(0,243,255,0.5);
+            margin: 0 auto 6px auto;
+        }
+
+        /* ▶ 视频进度条 */
+        .video-progress-wrap {
+            width: 1440px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .video-time {
+            font-size: 13px;
+            color: #00f3ff;
+            font-family: monospace;
+            min-width: 42px;
+            text-align: center;
+        }
+        .video-progress-track {
+            flex: 1;
+            height: 6px;
+            background: rgba(0, 243, 255, 0.15);
+            border: 1px solid rgba(0, 243, 255, 0.25);
+            cursor: pointer;
+            position: relative;
+            border-radius: 3px;
+        }
+        .video-progress-fill {
+            height: 100%;
+            background: #00f3ff;
+            box-shadow: 0 0 8px rgba(0, 243, 255, 0.6);
+            width: 0%;
+            border-radius: 3px;
+            transition: width 0.1s linear;
+            pointer-events: none;
+        }
+        
+        /* ==========================================================================
+           🛠️ 调整3：针对独立元素设立的高亮编辑外框（杜绝任何组合框干扰）
+           ========================================================================== */
+        .element-editable-node {
+            position: relative;
+        }
+        .edit-focus-outline {
+            outline: 2px dotted #ff0055 !important;
+            box-shadow: 0 0 20px rgba(255, 0, 85, 0.3) !important;
+        }
+
+        /* 调整2：智能弹出小方块操作面板样式 (Floating Action Context Menu) */
+        #hud-floating-toolbar {
+            position: absolute;
+            background: #091212;
+            border: 2px solid #ff0055;
+            padding: 8px;
+            z-index: 110000;
+            display: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            clip-path: polygon(0 0, 92% 0, 100% 25%, 100% 100%, 8% 100%, 0 75%);
+            width: 480px;
+            text-align: center;
+        }
+        .toolbar-action-btn {
+            background: #122424;
+            color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 10px;
+            margin: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .toolbar-action-btn:hover {
+            background: #ff0055;
+            color: #fff;
+            border-color: #ff0055;
+        }
+    </style>
+</head>
+<body>
+
+<div id="telemetry-stage">
+    
+    <!-- 全局多轨选图控制器插件 -->
+    <input type="file" id="hidden-scene-uploader" accept="image/*" style="display: none;">
+
+    <!-- ------------------------------------------------------------------------
+         调整2：高感知独立弹出小方块操作面板 (Floating Toolbar)
+         ------------------------------------------------------------------------ -->
+    <div id="hud-floating-toolbar">
+        <button class="toolbar-action-btn" id="tool-btn-move" title="激活后可用鼠标拖拽位置">✥ 移动位置</button>
+        <button class="toolbar-action-btn" id="tool-btn-edit" title="激活文本修改编辑">📝 编辑内容</button>
+        <button class="toolbar-action-btn" id="tool-btn-img" title="从桌面直接上传新图片">🖼️ 插入图片</button>
+        <button class="toolbar-action-btn" id="tool-btn-big" title="放大当前元素">➕ 放大</button>
+        <button class="toolbar-action-btn" id="tool-btn-small" title="缩小当前元素">➖ 缩小</button>
+        <button class="toolbar-action-btn" id="tool-btn-addtext" title="在页面内追加文本框">+ 文本框</button>
+        <button class="toolbar-action-btn" id="tool-btn-addimg" title="在页面内追加图片框">+ 图片框</button>
+    </div>
+
+    <!-- ------------------------------------------------------------------------
+         P1：盛典封面页 ——【调整1：完全重新构思的赛博数字能量场，标题图巨幅放大绝对居中】
+         ------------------------------------------------------------------------ -->
+    <div class="slide theme-dark p1-transition active" style="background: #010808;" id="slide-page-1">
+
+        <!-- ⚡ 背景层：纵深能量放射光线 -->
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 1600px; height: 1600px; background: radial-gradient(ellipse at center, rgba(0,243,255,0.06) 0%, transparent 55%, transparent 100%); pointer-events: none;"></div>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 1000px; height: 1000px; background: radial-gradient(ellipse at center, rgba(0,243,255,0.08) 0%, transparent 40%, transparent 100%); pointer-events: none;"></div>
+
+        <!-- 动态能量环 多层装饰 -->
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 820px; height: 820px; border-radius: 50%; border: 1px solid rgba(0,243,255,0.12); pointer-events: none;"></div>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 920px; height: 920px; border-radius: 50%; border: 1px dashed rgba(0,243,255,0.06); pointer-events: none;"></div>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 1100px; height: 1100px; border-radius: 50%; border: 1px solid rgba(0,243,255,0.04); pointer-events: none;"></div>
+
+        <!-- 横向扫描光线 -->
+        <div style="position: absolute; top: 42%; left: 0; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(0,243,255,0.3) 20%, rgba(0,243,255,0.6) 50%, rgba(0,243,255,0.3) 80%, transparent); pointer-events: none;"></div>
+        <div style="position: absolute; top: 58%; left: 0; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, rgba(0,243,255,0.3) 20%, rgba(0,243,255,0.6) 50%, rgba(0,243,255,0.3) 80%, transparent); pointer-events: none;"></div>
+
+        <!-- 四角几何装饰 -->
+        <div style="position: absolute; top: 120px; left: 60px; width: 40px; height: 40px; border-top: 2px solid rgba(0,243,255,0.4); border-left: 2px solid rgba(0,243,255,0.4); pointer-events: none;"></div>
+        <div style="position: absolute; top: 120px; right: 60px; width: 40px; height: 40px; border-top: 2px solid rgba(0,243,255,0.4); border-right: 2px solid rgba(0,243,255,0.4); pointer-events: none;"></div>
+        <div style="position: absolute; bottom: 120px; left: 60px; width: 40px; height: 40px; border-bottom: 2px solid rgba(0,243,255,0.4); border-left: 2px solid rgba(0,243,255,0.4); pointer-events: none;"></div>
+        <div style="position: absolute; bottom: 120px; right: 60px; width: 40px; height: 40px; border-bottom: 2px solid rgba(0,243,255,0.4); border-right: 2px solid rgba(0,243,255,0.4); pointer-events: none;"></div>
+
+        <!-- 边缘Telemetry数据线 -->
+        <div style="position: absolute; top: 130px; left: 115px; font-size: 12px; color: #00f3ff; opacity: 0.25; font-family: monospace; letter-spacing: 2px;" class="element-editable-node">REWRITE THE FUTURE</div>
+        <div style="position: absolute; top: 130px; right: 115px; font-size: 12px; color: #00f3ff; opacity: 0.25; font-family: monospace; letter-spacing: 2px;" class="element-editable-node">REWRITE THE FUTURE</div>
+        <div style="position: absolute; bottom: 130px; left: 115px; font-size: 12px; color: #00f3ff; opacity: 0.2; font-family: monospace; letter-spacing: 2px;" class="element-editable-node">REWRITE THE FUTURE</div>
+        <div style="position: absolute; bottom: 130px; right: 115px; font-size: 12px; color: #00f3ff; opacity: 0.2; font-family: monospace; letter-spacing: 2px;" class="element-editable-node">REWRITE THE FUTURE</div>
+
+        <div class="hud-header-container">
+            <div class="hud-logo-area element-editable-node">
+                <img src="images/资源 2.png" style="height:48px; width:auto; vertical-align:middle; margin-top:-6px;" alt="24/7 FITNESS">
+            </div>
+            <div class="hud-telemetry-data element-editable-node">REWRITE THE FUTURE</div>
+        </div>
+
+        <!-- 🔥 核心主视觉区：参考图1 巨幅居中放大 -->
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 1400px; height: 620px; text-align: center;" class="element-editable-node">
+            <!-- 发光底层烘托 -->
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 900px; height: 500px; background: radial-gradient(ellipse at center, rgba(0,243,255,0.12) 0%, transparent 70%); pointer-events: none;"></div>
+            <!-- 标题图片 -->
+            <img src="images/参考图1.png" alt="24/7 FITNESS 燃动之夜" style="position: relative; z-index: 2; max-width: 100%; max-height: 100%; object-fit: contain; filter: drop-shadow(0 0 50px rgba(0, 243, 255, 0.5)) drop-shadow(0 0 120px rgba(0, 243, 255, 0.2));">
+        </div>
+
+        <!-- 底部大屏发布会副标 -->
+        <div style="position: absolute; bottom: 55px; left: 50%; transform: translateX(-50%); text-align: center; width: 1000px;" class="element-editable-node">
+            <div style="width: 200px; height: 1px; background: rgba(0,243,255,0.4); margin: 0 auto 18px auto;"></div>
+            <p style="font-size: 22px; color: rgba(255,255,255,0.7); letter-spacing: 14px; font-weight: 900; text-transform: uppercase;">2026年品牌水陆全能运动会</p>
+            <div style="width: 200px; height: 1px; background: rgba(0,243,255,0.4); margin: 18px auto 0 auto;"></div>
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------------
+         P2：“蜕变之星”介绍页
+         ------------------------------------------------------------------------ -->
+    <div class="slide theme-dark p2-transition" id="slide-page-2">
+        <div class="hud-header-container">
+            <div class="hud-logo-area"><img src="images/资源 2.png" style="height:48px; width:auto; vertical-align:middle; margin-top:-6px;" alt="24/7 FITNESS"></div>
+            <div class="hud-telemetry-data element-editable-node">REWRITE THE FUTURE</div>
+        </div>
+
+        <div style="position: absolute; top: 250px; left: 100px; width: 780px;" class="element-editable-node">
+            <h1 class="font-sport-bold font-sport-cyan" style="font-size: 72px; letter-spacing: 4px;">蜕变之星</h1>
+            <h1 class="font-sport-bold" style="font-size: 90px; margin-top: 10px;">TRANSFORM<br><span class="font-sport-cyan">STAR 2026</span></h1>
+            <p style="color: rgba(255,255,255,0.8); font-size: 22px; margin-top: 40px; line-height: 1.8; letter-spacing: 1px;">
+                致敬打破躯壳的野炼霸气。在 24/7 FITNESS，他们以高燃姿态宣战平庸，用肌肉写就了属于这个盛夏的最强高光蜕变。
+            </p>
+        </div>
+
+        <div style="position: absolute; top: 180px; right: 100px; width: 860px; height: 650px;" class="tech-corner-frame element-editable-node">
+            <img src="images/海报1.png" style="width:100%; height:100%; object-fit:contain;">
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------------
+         P3：“蜕变之星”video页
+         ------------------------------------------------------------------------ -->
+    <div class="slide theme-dark p3-transition" id="slide-page-3">
+        <div class="hud-header-container">
+            <div class="hud-logo-area"><img src="images/资源 2.png" style="height:48px; width:auto; vertical-align:middle; margin-top:-6px;" alt="24/7 FITNESS"></div>
+            <div class="hud-telemetry-data element-editable-node">REWRITE THE FUTURE</div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;" class="element-editable-node">
+            <h1 class="font-sport-bold font-sport-cyan" style="font-size: 64px; letter-spacing: 4px;">蜕变之星视频</h1>
+            <h1 class="font-sport-bold" style="font-size: 42px; letter-spacing: 2px; margin-top: 8px;">THE TRANSFORMATION VIDEO</h1>
+            <div class="tech-corner-frame" style="width: 1600px; height: 700px; margin: 30px auto 0 auto; border-style: solid; border-width: 3px; position: relative; overflow: hidden;">
+                <video id="p3-video" src="https://github.com/jennielbj/247fitness-ppt/releases/download/v1.0/%E8%A7%86%E9%A2%911.mp4" style="width:100%; height:100%; object-fit:contain; background:#000; cursor:pointer;" preload="metadata" onclick="toggleP3Video()"></video>
+            </div>
+            <!-- 细长进度条 -->
+            <div class="video-progress-wrap" style="width: 1600px; margin-top: 8px;">
+                <span class="video-time" id="p3-current-time">00:00</span>
+                <div class="video-progress-track" id="p3-progress-track" onclick="seekP3Video(event)">
+                    <div class="video-progress-fill" id="p3-progress-fill"></div>
+                </div>
+                <span class="video-time" id="p3-duration">00:00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------------
+         P4：现场人气冠军投票页
+         ------------------------------------------------------------------------ -->
+    <div class="slide theme-dark p4-transition" id="slide-page-4">
+        <div class="hud-header-container">
+            <div class="hud-logo-area"><img src="images/资源 2.png" style="height:48px; width:auto; vertical-align:middle; margin-top:-6px;" alt="24/7 FITNESS"></div>
+            <div class="hud-telemetry-data element-editable-node">REWRITE THE FUTURE</div>
+        </div>
+
+        <div style="position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center;" class="element-editable-node">
+            <h1 class="font-sport-bold" style="font-size: 130px; letter-spacing: 6px;">最佳蜕变奖</h1>
+            <h1 class="font-sport-bold font-sport-cyan" style="font-size: 110px; margin-top: 30px;">现场投票通道即刻全开</h1>
+            <!-- 二维码区域 -->
+            <div style="margin-top: 50px; display: inline-block; text-align: center;">
+                <div class="tech-corner-frame" style="display: inline-block; padding: 12px; background: rgba(0,0,0,0.6);">
+                    <img src="images/二维码.jpg" style="width: 200px; height: 200px; object-fit: contain; display: block;">
+                </div>
+                <p style="color: #00f3ff; font-size: 18px; letter-spacing: 6px; margin-top: 15px; font-weight: bold;">SCAN TO VOTE · 扫码即刻投票</p>
+            </div>
+            <p style="color: rgba(255,255,255,0.4); font-size: 24px; letter-spacing: 10px; margin-top: 40px;">MASSIVE INTERACTIVE CHANNELS RUNNING</p>
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------------
+         P5：揭晓-现场人气冠军？页
+         ------------------------------------------------------------------------ -->
+    <div class="slide theme-dark p5-transition" style="background-color: #030808;" id="slide-page-5">
+        <div class="hud-header-container">
+            <div class="hud-logo-area"><img src="images/资源 2.png" style="height:48px; width:auto; vertical-align:middle; margin-top:-6px;" alt="24/7 FITNESS"></div>
+            <div class="hud-telemetry-data element-editable-node">REWRITE THE FUTURE</div>
+        </div>
+
+        <div style="position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center;" class="element-editable-node">
+            <h1 class="font-sport-bold font-sport-cyan" style="font-size: 150px;">谁能登顶？</h1>
+            <h1 class="font-sport-bold" style="font-size: 90px; margin-top: 30px; color:#ffffff;">最佳蜕变奖</h1>
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------------
+         P6：“4位获奖者奖项”
+         ------------------------------------------------------------------------ -->
+    <div class="slide theme-dark p6-transition" id="slide-page-6">
+        <div class="hud-header-container">
+            <div class="hud-logo-area"><img src="images/资源 2.png" style="height:48px; width:auto; vertical-align:middle; margin-top:-6px;" alt="24/7 FITNESS"></div>
+            <div class="hud-telemetry-data element-editable-node">REWRITE THE FUTURE</div>
+        </div>
+
+        <div style="text-align: center; width: 100%; margin-top: 20px;" class="element-editable-node">
+            <h1 class="font-sport-bold" style="font-size: 56px; letter-spacing: 4px; color: #ffffff;">荣耀定格：4位终极获奖者</h1>
+            <h1 class="font-sport-bold font-sport-cyan" style="font-size: 42px; margin-top: 8px;">4 REWRITE THE FUTURE WINNERS</h1>
+            <div class="matrix-container" style="margin-top: 35px;">
+                <div class="award-wrapper element-editable-node">
+                    <div class="award-label-line"></div>
+                    <div class="award-label">最佳减脂奖</div>
+                    <div class="award-label-line"></div>
+                    <div class="winner-frame-3"><img src="images/张涛1.png"></div>
+                </div>
+                <div class="award-wrapper element-editable-node">
+                    <div class="award-label-line"></div>
+                    <div class="award-label">最佳增肌奖</div>
+                    <div class="award-label-line"></div>
+                    <div class="winner-frame-3" style="border-color: #00f3ff; box-shadow: 0 0 30px rgba(0,243,255,0.2);"><img src="images/马2.png"></div>
+                </div>
+                <div class="award-wrapper element-editable-node">
+                    <div class="award-label-line"></div>
+                    <div class="award-label">公开人气大奖</div>
+                    <div class="award-label-line"></div>
+                    <div class="winner-frame-3"><img src="images/吴3.png"></div>
+                </div>
+                <div class="award-wrapper element-editable-node">
+                    <div class="award-label-line"></div>
+                    <div class="award-label" style="opacity: 0.3;">待揭晓</div>
+                    <div class="award-label-line"></div>
+                    <div class="winner-frame-3" style="border-style: dashed; border-color: rgba(255,255,255,0.2);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------------
+         P7：“13位入围者先锋网格” ——【调整1：精准自动关联载入您本地桌面的真实微信图片】
+         ------------------------------------------------------------------------ -->
+    <div class="slide theme-dark p7-transition" id="slide-page-7">
+        <div class="hud-header-container">
+            <div class="hud-logo-area"><img src="images/资源 2.png" style="height:48px; width:auto; vertical-align:middle; margin-top:-6px;" alt="24/7 FITNESS"></div>
+            <div class="hud-telemetry-data element-editable-node">REWRITE THE FUTURE</div>
+        </div>
+
+        <div style="text-align: center; margin-top: 15px;" class="element-editable-node">
+            <h1 class="font-sport-bold font-sport-cyan" style="font-size: 52px; letter-spacing: 4px;">24/7野炼致敬：13位硬核入围先锋</h1>
+            <h1 class="font-sport-bold" style="font-size: 38px; margin-top: 8px;">13 ELITE FIELD NOMINEES</h1>
+            
+            <div class="matrix-container" style="margin-top: 40px;">
+                <!-- 顶排 7 个模块 -->
+                <div class="nominee-row">
+                    <div class="nominee-digital-cell element-editable-node"><img src="images/马2.png"></div>
+                    <div class="nominee-digital-cell element-editable-node"><img src="images/张涛1.png"></div>
+                    <div class="nominee-digital-cell element-editable-node"><img src="images/微信图片_20260701100010.png"></div>
+                    <div class="nominee-digital-cell element-editable-node"><img src="images/微信图片_20260701100015.png"></div>
+                    <div class="nominee-digital-cell element-editable-node"><img src="images/微信图片_20260701100021.png"></div>
+                    <div class="nominee-digital-cell element-editable-node"><img src="images/微信图片_20260701100024.png"></div>
+                    <div class="nominee-digital-cell element-editable-node"><img src="images/微信图片_20260701100027.png"></div>
+                </div>
+                <!-- 底排 6 个模块 -->
+                <div class="nominee-row">
+                    <div class="nominee-digital-cell element-editable-node"><img src="images/微信图片_20260701100030.png"></div>
+                    <div class="nominee-digital-cell element-editable-node"><img src="images/微信图片_20260701100033.png"></div>
+                    <div class="nominee-digital-cell element-editable-node"><img src="images/微信图片_20260701100036.png"></div>
+                    <div class="nominee-digital-cell element-editable-node"><img src="images/微信图片_20260701100039.png"></div>
+                    <div class="nominee-digital-cell element-editable-node"><img src="images/微信图片_20260702110109_22_452.png"></div>
+                    <div class="nominee-digital-cell element-editable-node"><img src="images/吴3.png"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------------
+         P8：惊喜加码页
+         ------------------------------------------------------------------------ -->
+    <div class="slide theme-cyan-pulse p8-transition" id="slide-page-8">
+        <div class="hud-header-container">
+            <div class="hud-logo-area"><img src="images/资源 2.png" style="height:48px; width:auto; vertical-align:middle; margin-top:-6px;" alt="24/7 FITNESS"></div>
+            <div class="hud-telemetry-data element-editable-node">REWRITE THE FUTURE</div>
+        </div>
+
+        <div style="position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center;" class="element-editable-node">
+            <h1 class="font-sport-bold" style="color: #ffffff; font-size: 155px;">不要走开</h1>
+            <h1 class="font-sport-bold" style="color: #040d0d; font-size: 120px; margin-top: 20px;">⚡ 惊喜现场加码 ⚡</h1>
+        </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------------
+         P9：抽奖环节页
+         ------------------------------------------------------------------------ -->
+    <div class="slide theme-dark p9-transition" id="slide-page-9">
+        <div class="hud-header-container">
+            <div class="hud-logo-area"><img src="images/资源 2.png" style="height:48px; width:auto; vertical-align:middle; margin-top:-6px;" alt="24/7 FITNESS"></div>
+            <div class="hud-telemetry-data element-editable-node">REWRITE THE FUTURE</div>
+        </div>
+
+        <div style="position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center;" class="element-editable-node">
+            <h1 class="font-sport-bold font-sport-cyan" style="font-size: 160px;">LUCKY DRAW</h1>
+            <h1 class="font-sport-bold" style="color: #ffffff; font-size: 90px; margin-top: 35px;">全场狂欢现场抽奖</h1>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // 🎨 16:9 画布比例锁定自适应
+    const stage = document.getElementById('telemetry-stage');
+    let currentScaleFactor = 1; 
+    
+    function applyDynamicScale() {
+        const baseWidth = 1920;
+        const baseHeight = 1080;
+        const targetRatio = baseWidth / baseHeight;
+        const currentRatio = window.innerWidth / window.innerHeight;
+        if (currentRatio > targetRatio) {
+            currentScaleFactor = window.innerHeight / baseHeight;
+        } else {
+            currentScaleFactor = window.innerWidth / baseWidth;
+        }
+        stage.style.transform = `translate(-50%, -50%) scale(${currentScaleFactor})`;
+    }
+    window.addEventListener('resize', applyDynamicScale);
+    applyDynamicScale();
+
+    // PPT 切换机制
+    const slides = document.querySelectorAll('.slide');
+    let currentIdx = 0;
+    let isEditMode = false;
+
+    function jumpToSlide(targetIdx) {
+        // 切页时暂停P3视频
+        const p3Video = document.getElementById('p3-video');
+        if (p3Video && !p3Video.paused) {
+            p3Video.pause();
+        }
+        slides[currentIdx].classList.remove('active');
+        currentIdx = (targetIdx + slides.length) % slides.length;
+        slides[currentIdx].classList.add('active');
+        hideToolbar();
+    }
+
+    const prevBtn = document.getElementById('hudPrevBtn');
+    const nextBtn = document.getElementById('hudNextBtn');
+    if (prevBtn) prevBtn.addEventListener('click', () => jumpToSlide(currentIdx - 1));
+    if (nextBtn) nextBtn.addEventListener('click', () => jumpToSlide(currentIdx + 1));
+
+    document.addEventListener('keydown', (e) => {
+        if (isEditMode && document.activeElement && document.activeElement.hasAttribute('contenteditable')) {
+            return; 
+        }
+        if (e.key === 'ArrowRight' || e.key === ' ') jumpToSlide(currentIdx + 1);
+        if (e.key === 'ArrowLeft') jumpToSlide(currentIdx - 1);
+    });
+
+    // ==========================================================================
+    // 🎛️ 调整2 & 调整3：全新独立弹窗交互架构（Step 1 点击直接召唤 6 项单独控制块）
+    // ==========================================================================
+    const editToggleBtn = document.getElementById('editToggleBtn');
+    const toolbar = document.getElementById('hud-floating-toolbar');
+    const hiddenUploader = document.getElementById('hidden-scene-uploader');
+    
+    let activeSelectedElement = null; // 当前被单独点击选中的独立元素节点
+    let isDragEnabled = false; // 当前元素的移动状态锁
+
+    // 双模切换开闸
+    if (editToggleBtn) editToggleBtn.addEventListener('click', () => {
+        isEditMode = !isEditMode;
+        if (isEditMode) {
+            editToggleBtn.innerText = 'EDIT MODE: ON';
+            editToggleBtn.style.backgroundColor = '#ff0055';
+            editToggleBtn.style.color = '#fff';
+            // 让全场所有独立块具备感知点击的高亮虚线提示
+            document.querySelectorAll('.element-editable-node').forEach(node => {
+                node.style.cursor = 'pointer';
+            });
+        } else {
+            editToggleBtn.innerText = 'EDIT MODE: OFF';
+            editToggleBtn.style.backgroundColor = 'transparent';
+            editToggleBtn.style.color = '#ff0055';
+            hideToolbar();
+            document.querySelectorAll('.element-editable-node').forEach(node => {
+                node.style.cursor = 'default';
+                node.classList.remove('edit-focus-outline');
+                node.removeAttribute('contenteditable');
+            });
+        }
+    });
+
+    // 监听全场点击事件：捕获针对任何“单独元素”的点击操作（调整3：拒绝组合框）
+    document.addEventListener('click', (e) => {
+        if (!isEditMode) return;
+        
+        // 排除点击控制台及悬浮小方块本身
+        if (e.target.closest('#hud-floating-toolbar') || e.target.closest('.hud-control-deck')) {
+            return;
+        }
+
+        const clickedNode = e.target.closest('.element-editable-node');
+        if (clickedNode) {
+            e.stopPropagation();
+            selectElementNode(clickedNode, e);
+        } else {
+            hideToolbar();
+        }
+    });
+
+    // Step 1: 点击元素，跳出小方块并为该元素拉起“单独框”
+    function selectElementNode(node, event) {
+        // 清除上一个元素的单独高亮
+        if (activeSelectedElement) {
+            activeSelectedElement.classList.remove('edit-focus-outline');
+            if (activeSelectedElement !== node) {
+                activeSelectedElement.removeAttribute('contenteditable');
+                isDragEnabled = false;
+            }
+        }
+
+        activeSelectedElement = node;
+        activeSelectedElement.classList.add('edit-focus-outline'); // 调整3：显示专属单独框
+
+        // 精算弹出小方块（操作面板）的屏幕绝对物理坐标
+        const rect = activeSelectedElement.getBoundingClientRect();
+        toolbar.style.display = 'block';
+        
+        // 基于物理缩放比补偿，将小方块挂载在单独元素上方
+        const stageRect = stage.getBoundingClientRect();
+        const topPos = (rect.top - stageRect.top) / currentScaleFactor - 75;
+        const leftPos = (rect.left - stageRect.left) / currentScaleFactor;
+        
+        toolbar.style.top = topPos + 'px';
+        toolbar.style.left = Math.max(20, Math.min(leftPos, 1400)) + 'px';
+    }
+
+    function hideToolbar() {
+        toolbar.style.display = 'none';
+        if (activeSelectedElement) {
+            activeSelectedElement.classList.remove('edit-focus-outline');
+        }
+        activeSelectedElement = null;
+        isDragEnabled = false;
+    }
+
+    // ==========================================================================
+    // 🎛️ 悬浮小方块内 6 大核心原子导播工具事件绑定
+    // ==========================================================================
+
+    // 功能 1：移动位置 (开关制)
+    document.getElementById('tool-btn-move').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!activeSelectedElement) return;
+        isDragEnabled = !isDragEnabled;
+        if (isDragEnabled) {
+            alert('✥ 24/7 INTERACTIVE:\n拖拽移动已激活！现在请在屏幕上直接用鼠标按住该元素进行拖移。');
+        }
+    });
+
+    // 功能 2：编辑内容（针对文本节点）
+    document.getElementById('tool-btn-edit').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!activeSelectedElement) return;
+        
+        // 查找或判定当前选中的是否是可支持文本输入的块
+        let textNode = activeSelectedElement.tagName === 'IMG' ? null : activeSelectedElement;
+        if (!textNode) {
+            // 如果点到的是个包裹层，寻找内部的文本容器
+            textNode = activeSelectedElement.querySelector('span, p, h1, h2');
+        }
+        
+        if (textNode) {
+            textNode.setAttribute('contenteditable', 'true');
+            textNode.focus();
+        } else {
+            alert('⚙️ 24/7 SYSTEM:\n当前选中的元素非文本节点，无法直接进行文本编辑。');
+        }
+    });
+
+    // 功能 3：插入图片（直接选取电脑桌面图片替换）
+    document.getElementById('tool-btn-img').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!activeSelectedElement) return;
+        hiddenUploader.click(); // 直接点选，插件式加载桌面资源
+    });
+
+    hiddenUploader.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file && activeSelectedElement) {
+            const localBlobUrl = URL.createObjectURL(file);
+            
+            // 判定当前选中的单独框是 IMG 还是包含带有 IMG 的容器
+            let targetImg = activeSelectedElement.tagName === 'IMG' ? activeSelectedElement : activeSelectedElement.querySelector('img');
+            
+            if (targetImg) {
+                targetImg.src = localBlobUrl;
+            } else {
+                // 如果原本没有图，直接在容器内生成一张全新的图片
+                const newImg = document.createElement('img');
+                newImg.src = localBlobUrl;
+                newImg.style.width = '100%';
+                newImg.style.height = '100%';
+                newImg.style.objectFit = 'cover';
+                activeSelectedElement.appendChild(newImg);
+            }
+            e.target.value = ''; // 归零重置
+        }
+    });
+
+    // 功能 4：等比放大 (Scale Up)
+    document.getElementById('tool-btn-big').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!activeSelectedElement) return;
+        adjustElementScale(activeSelectedElement, 1.1);
+    });
+
+    // 功能 5：等比缩小 (Scale Down)
+    document.getElementById('tool-btn-small').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!activeSelectedElement) return;
+        adjustElementScale(activeSelectedElement, 0.9);
+    });
+
+    function adjustElementScale(element, factor) {
+        // 如果是图片或容器，调整其宽高
+        const width = element.offsetWidth;
+        const height = element.offsetHeight;
+        if (width && height && element.tagName !== 'SPAN') {
+            element.style.width = (width * factor) + 'px';
+            element.style.height = (height * factor) + 'px';
+        }
+        // 同步增加字体字号
+        const currentFontSize = parseFloat(window.getComputedStyle(element).fontSize);
+        if (currentFontSize) {
+            element.style.fontSize = (currentFontSize * factor) + 'px';
+        }
+    }
+
+    // 功能 6：派生创建全新独立的文本框
+    document.getElementById('tool-btn-addtext').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const activeSlide = slides[currentIdx];
+        const newText = document.createElement('div');
+        newText.className = 'element-editable-node live-editable-text';
+        newText.innerText = '🔥 NEW TEXT BOX (双击改字/拖拽位移)';
+        newText.style.position = 'absolute';
+        newText.style.top = '300px';
+        newText.style.left = '400px';
+        newText.style.fontSize = '32px';
+        newText.style.fontWeight = '900';
+        newText.style.color = '#00f3ff';
+        newText.style.zIndex = '999';
+        activeSlide.appendChild(newText);
+        hideToolbar();
+    });
+
+    // 功能 7：派生创建全新独立的图片框
+    document.getElementById('tool-btn-addimg').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const activeSlide = slides[currentIdx];
+        const newImgFrame = document.createElement('div');
+        newImgFrame.className = 'element-editable-node tech-corner-frame';
+        newImgFrame.style.position = 'absolute';
+        newImgFrame.style.top = '300px';
+        newImgFrame.style.left = '800px';
+        newImgFrame.style.width = '300px';
+        newImgFrame.style.height = '400px';
+        newImgFrame.style.zIndex = '999';
+        newImgFrame.innerHTML = '<div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:16px; color:#00f3ff; text-align:center;">+ 点击上传桌面图片</div>';
+        activeSlide.appendChild(newImgFrame);
+        hideToolbar();
+    });
+
+    // ==========================================================================
+    // 📐 全元素物理惯性拖拽平移运算引擎
+    // ==========================================================================
+    let startX, startY, initLeft, initTop;
+
+    document.addEventListener('mousedown', (e) => {
+        if (!isEditMode || !isDragEnabled || !activeSelectedElement) return;
+
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        const computedStyle = window.getComputedStyle(activeSelectedElement);
+        if (computedStyle.position !== 'absolute') {
+            activeSelectedElement.style.position = 'absolute';
+        }
+
+        initLeft = parseInt(computedStyle.left) || activeSelectedElement.offsetLeft || 0;
+        initTop = parseInt(computedStyle.top) || activeSelectedElement.offsetTop || 0;
+
+        document.addEventListener('mousemove', dragProcess);
+        document.addEventListener('mouseup', dragTerminate);
+        e.preventDefault();
+    });
+
+    function dragProcess(e) {
+        if (!activeSelectedElement || !isDragEnabled) return;
+        const deltaX = (e.clientX - startX) / currentScaleFactor;
+        const deltaY = (e.clientY - startY) / currentScaleFactor;
+
+        activeSelectedElement.style.left = (initLeft + deltaX) + 'px';
+        activeSelectedElement.style.top = (initTop + deltaY) + 'px';
+        activeSelectedElement.style.right = 'auto'; 
+        activeSelectedElement.style.margin = '0';
+        
+        // 让小方块同步跟随被拖拽的独立块坐标运动
+        const rect = activeSelectedElement.getBoundingClientRect();
+        const stageRect = stage.getBoundingClientRect();
+        toolbar.style.top = ((rect.top - stageRect.top) / currentScaleFactor - 75) + 'px';
+        toolbar.style.left = ((rect.left - stageRect.left) / currentScaleFactor) + 'px';
+    }
+
+    function dragTerminate() {
+        document.removeEventListener('mousemove', dragProcess);
+        document.removeEventListener('mouseup', dragTerminate);
+    }
+
+    // ==========================================================================
+    // 🎬 P3 视频播放/暂停控制器 + 进度条
+    // ==========================================================================
+    function toggleP3Video() {
+        const video = document.getElementById('p3-video');
+        if (!video) return;
+        if (video.paused) {
+            video.play();
+        } else {
+            video.pause();
+        }
+    }
+
+    function formatTime(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    function seekP3Video(event) {
+        const video = document.getElementById('p3-video');
+        const track = document.getElementById('p3-progress-track');
+        if (!video || !track || !video.duration) return;
+        const rect = track.getBoundingClientRect();
+        const ratio = (event.clientX - rect.left) / rect.width;
+        const totalDisplay = video.duration - 1;
+        video.currentTime = 1 + Math.max(0, Math.min(ratio, 1)) * totalDisplay;
+    }
+
+    // 监听视频事件，同步进度条
+    document.addEventListener('DOMContentLoaded', function() {
+        const video = document.getElementById('p3-video');
+        const progressFill = document.getElementById('p3-progress-fill');
+        const currentTimeEl = document.getElementById('p3-current-time');
+        const durationEl = document.getElementById('p3-duration');
+        if (!video) return;
+
+        // 跳过开头1秒
+        video.addEventListener('loadedmetadata', function() {
+            video.currentTime = 1;
+            durationEl.textContent = formatTime(video.duration - 1);
+        });
+
+        video.addEventListener('timeupdate', function() {
+            if (!video.duration) return;
+            const displayTime = Math.max(0, video.currentTime - 1);
+            const totalDisplay = video.duration - 1;
+            const pct = totalDisplay > 0 ? (displayTime / totalDisplay) * 100 : 0;
+            progressFill.style.width = pct + '%';
+            currentTimeEl.textContent = formatTime(displayTime);
+        });
+
+        // 阻止拖拽到1秒之前
+        video.addEventListener('seeked', function() {
+            if (video.currentTime < 1) video.currentTime = 1;
+        });
+
+        video.addEventListener('ended', function() {
+            // 视频播放完毕
+        });
+        video.addEventListener('play', function() {
+            // 视频开始播放
+        });
+        video.addEventListener('pause', function() {
+            // 视频暂停
+        });
+    });
+</script>
+</body>
+</html>
