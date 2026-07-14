@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>视频播放器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:Arial,sans-serif}
+#status{color:#2ecbc8;font-size:24px;margin-bottom:20px}
+#progress{width:600px;height:8px;background:#333;border-radius:4px;overflow:hidden;margin-bottom:20px}
+#bar{width:0%;height:100%;background:#2ecbc8;transition:width 0.3s}
+#video{max-width:90%;max-height:70vh;display:none}
+</style>
+</head>
+<body>
+<div id="status">正在加载视频...</div>
+<div id="progress"><div id="bar"></div></div>
+<video id="video" controls></video>
+
+<script>
+var chunks = ['chunks/chunk_aa.mp4', 'chunks/chunk_ab.mp4', 'chunks/chunk_ac.mp4'];
+var allChunks = [];
+var totalSize = 0;
+var loadedSize = 0;
+
+// First get total size
+Promise.all(chunks.map(function(url) {
+    return fetch(url, {method:'HEAD'}).then(function(r) {
+        return Number(r.headers.get('Content-Length')) || 0;
+    }).catch(function() { return 0; });
+})).then(function(sizes) {
+    totalSize = sizes.reduce(function(a,b) { return a+b; }, 0);
+    return loadAll();
+}).catch(function() {
+    return loadAll(); // fallback
+});
+
+function loadAll() {
+    var idx = 0;
+    function loadNext() {
+        if (idx >= chunks.length) {
+            return finish();
+        }
+        var url = chunks[idx];
+        document.getElementById('status').textContent = '加载分片 ' + (idx+1) + '/' + chunks.length + '...';
+        return fetch(url).then(function(r) {
+            if (!r.ok) throw Error('HTTP ' + r.status);
+            return r.arrayBuffer();
+        }).then(function(buf) {
+            allChunks.push(buf);
+            loadedSize += buf.byteLength;
+            if (totalSize > 0) {
+                var pct = Math.round(loadedSize / totalSize * 100);
+                document.getElementById('bar').style.width = pct + '%';
+                document.getElementById('status').textContent = '加载中 ' + pct + '%';
+            }
+            idx++;
+            return loadNext();
+        });
+    }
+    return loadNext();
+}
+
+function finish() {
+    document.getElementById('status').textContent = '拼接视频...';
+    var blob = new Blob(allChunks, {type:'video/mp4'});
+    var url = URL.createObjectURL(blob);
+    var video = document.getElementById('video');
+    video.src = url;
+    video.style.display = 'block';
+    document.getElementById('status').textContent = '点击播放';
+    document.getElementById('progress').style.display = 'none';
+}
+
+// Error handling
+window.addEventListener('error', function(e) {
+    if (e.target.tagName === 'SCRIPT') return;
+    document.getElementById('status').textContent = '加载失败: ' + (e.message || '未知错误');
+});
+</script>
+</body>
+</html>
