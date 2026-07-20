@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>蜕变之星投票 - 24/7 FITNESS 燃动之夜</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-style: normal !important;
+        }
+        body, html {
+            width: 100%;
+            min-height: 100vh;
+            background-color: #010505;
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* ── 赛博网格背景 ── */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image:
+                linear-gradient(rgba(0, 243, 255, 0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.035) 1px, transparent 1px);
+            background-size: 28px 28px;
+            background-position: center;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── 主容器 ── */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+
+        /* ── 顶部HUD栏 ── */
+        .hud-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 0 10px;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.18);
+            background: rgba(1, 5, 5, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .hud-logo {
+            height: 32px;
+            width: auto;
+        }
+        .hud-tag {
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: rgba(0, 243, 255, 0.55);
+            font-family: 'SF Mono', 'Menlo', 'Courier New', monospace;
+        }
+
+        /* ── 主标题区 ── */
+        .hero-section {
+            text-align: center;
+            padding: 36px 0 20px;
+        }
+        .hero-title {
+            font-size: 42px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: #ffffff;
+            line-height: 1.15;
+            text-transform: uppercase;
+        }
+        .hero-title-cyan {
+            color: #00f3ff;
+            text-shadow: 0 0 30px rgba(0, 243, 255, 0.5);
+            display: block;
+            font-size: 48px;
+            margin-top: 2px;
+        }
+        .hero-sub {
+            font-size: 13px;
+            letter-spacing: 8px;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 14px;
+            font-family: 'SF Mono', 'Menlo', 'Courier New', monospace;
+        }
+        .hero-divider {
+            width: 60px;
+            height: 1px;
+            background: rgba(0, 243, 255, 0.4);
+            margin: 18px auto;
+        }
+
+        /* ── 投票状态提示 ── */
+        .status-banner {
+            text-align: center;
+            padding: 14px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            display: none;
+        }
+        .status-banner.show { display: block; }
+        .status-banner.success {
+            background: rgba(46, 203, 200, 0.1);
+            border: 1px solid rgba(46, 203, 200, 0.35);
+            color: #2ecbc8;
+        }
+        .status-banner.info {
+            background: rgba(0, 243, 255, 0.08);
+            border: 1px solid rgba(0, 243, 255, 0.25);
+            color: #00f3ff;
+        }
+
+        /* ── 候选人网格 (2列) ── */
+        .candidates-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            padding-bottom: 100px;
+        }
+
+        /* ── 候选人卡片 ── */
+        .candidate-card {
+            position: relative;
+            border: 2px solid rgba(0, 243, 255, 0.22);
+            background: rgba(0, 243, 255, 0.015);
+            border-radius: 6px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            clip-path: polygon(0 0, 94% 0, 100% 3%, 100% 100%, 6% 100%, 0 97%);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .candidate-card:active {
+            transform: scale(0.96);
+            transition: transform 0.1s ease-out;
+        }
+        .candidate-card.selected {
+            border-color: #00f3ff;
+            box-shadow: 0 0 28px rgba(0, 243, 255, 0.35), inset 0 0 28px rgba(0, 243, 255, 0.06);
+            background: rgba(0, 243, 255, 0.06);
+        }
+        .candidate-card.voted {
+            pointer-events: none;
+            opacity: 0.55;
+            filter: grayscale(0.3);
+        }
+        .candidate-card.voted.selected {
+            opacity: 1;
+            filter: none;
+        }
+
+        .card-photo-wrap {
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            overflow: hidden;
+            position: relative;
+        }
+        .card-photo-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+        .candidate-card.selected .card-photo-wrap img {
+            transform: scale(1.04);
+        }
+
+        /* 序号角标 */
+        .card-badge {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: #00f3ff;
+            color: #030909;
+            font-size: 12px;
+            font-weight: 900;
+            padding: 3px 9px;
+            z-index: 3;
+            letter-spacing: 1px;
+        }
+        .candidate-card.selected .card-badge {
+            background: #ffffff;
+            box-shadow: 0 0 14px rgba(255,255,255,0.3);
+        }
+
+        /* 选中勾标 */
+        .card-check {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.65);
+            border: 2px solid rgba(255,255,255,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: scale(0.4);
+        }
+        .candidate-card.selected .card-check {
+            opacity: 1;
+            transform: scale(1);
+            background: #00f3ff;
+            border-color: #00f3ff;
+        }
+        .card-check::after {
+            content: '✓';
+            color: #030909;
+            font-size: 14px;
+            font-weight: 900;
+        }
+
+        /* 卡片底部信息 */
+        .card-info {
+            padding: 10px 12px;
+            text-align: center;
+        }
+        .card-name {
+            font-size: 14px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: 2px;
+        }
+        .candidate-card.selected .card-name {
+            color: #00f3ff;
+            text-shadow: 0 0 12px rgba(0, 243, 255, 0.4);
+        }
+
+        /* ── 底部固定投票按钮 ── */
+        .vote-fab {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 20;
+            padding: 14px 20px 28px;
+            background: linear-gradient(to top, rgba(1,5,5,0.98) 60%, rgba(1,5,5,0));
+            display: flex;
+            justify-content: center;
+        }
+        .btn-vote {
+            width: 100%;
+            max-width: 440px;
+            padding: 16px 0;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 6px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            text-transform: uppercase;
+            clip-path: polygon(0 0, 96% 0, 100% 12%, 100% 100%, 4% 100%, 0 88%);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-vote.ready {
+            background: #00f3ff;
+            color: #030909;
+            box-shadow: 0 0 40px rgba(0, 243, 255, 0.45);
+        }
+        .btn-vote.ready:active {
+            transform: scale(0.96);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+        .btn-vote.disabled {
+            background: rgba(255,255,255,0.06);
+            color: rgba(255,255,255,0.25);
+            pointer-events: none;
+        }
+        .btn-vote.done {
+            background: #2ecbc8;
+            color: #030909;
+            pointer-events: none;
+            letter-spacing: 4px;
+        }
+
+        /* ── 确认弹窗 ── */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(1, 5, 5, 0.88);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-dialog {
+            background: #091212;
+            border: 2px solid rgba(0, 243, 255, 0.25);
+            border-radius: 8px;
+            padding: 32px 24px 24px;
+            text-align: center;
+            width: 85%;
+            max-width: 380px;
+            clip-path: polygon(0 0, 94% 0, 100% 4%, 100% 100%, 6% 100%, 0 96%);
+            box-shadow: 0 0 60px rgba(0, 243, 255, 0.12);
+        }
+        .modal-dialog h2 {
+            font-size: 22px;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 3px;
+            margin-bottom: 6px;
+        }
+        .modal-dialog .modal-sub {
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+        .modal-preview {
+            width: 130px;
+            height: 173px;
+            margin: 0 auto 16px;
+            border: 2px solid #00f3ff;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 0 24px rgba(0, 243, 255, 0.25);
+        }
+        .modal-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .modal-preview-name {
+            font-size: 16px;
+            font-weight: 900;
+            color: #00f3ff;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+        }
+        .modal-btns {
+            display: flex;
+            gap: 12px;
+        }
+        .modal-btn {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            border-radius: 4px;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .modal-btn:active { transform: scale(0.95); }
+        .modal-btn.cancel {
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.6);
+        }
+        .modal-btn.confirm {
+            background: #00f3ff;
+            color: #030909;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.35);
+        }
+
+        /* ── 投票完成庆祝 ── */
+        .celebrate-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(1, 5, 5, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        .celebrate-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .celebrate-icon {
+            font-size: 72px;
+            animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.15); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .celebrate-title {
+            font-size: 28px;
+            font-weight: 900;
+            color: #00f3ff;
+            letter-spacing: 4px;
+            margin-top: 16px;
+            text-shadow: 0 0 30px rgba(0, 243, 255, 0.5);
+        }
+        .celebrate-sub {
+            font-size: 14px;
+            color: rgba(255,255,255,0.45);
+            letter-spacing: 3px;
+            margin-top: 10px;
+        }
+        .celebrate-hint {
+            margin-top: 32px;
+            padding: 10px 24px;
+            background: rgba(0, 243, 255, 0.1);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 4px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            letter-spacing: 2px;
+            animation: fadeInUp 0.6s 0.3s both;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── corner deco dots ── */
+        .corner-dot {
+            position: absolute;
+            width: 6px; height: 6px;
+            background: #00f3ff;
+            opacity: 0.35;
+            z-index: 2;
+        }
+        .corner-dot.tl { top: 8px; left: 8px; }
+        .corner-dot.tr { top: 8px; right: 8px; }
+        .corner-dot.bl { bottom: 8px; left: 8px; }
+        .corner-dot.br { bottom: 8px; right: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- HUD 顶部栏 -->
+    <div class="hud-header">
+        <span style="font-size:16px;font-weight:900;letter-spacing:4px;color:#00f3ff;">24/7 FITNESS</span>
+        <span class="hud-tag">REWRITE THE FUTURE</span>
+    </div>
+
+    <!-- 主标题 -->
+    <div class="hero-section">
+        <div class="hero-title">燃动之夜</div>
+        <div class="hero-title-cyan">蜕变之星投票</div>
+        <div class="hero-divider"></div>
+        <div class="hero-sub">TRANSFORMATION STAR</div>
+    </div>
+
+    <!-- 状态横幅 -->
+    <div id="statusBanner" class="status-banner"></div>
+
+    <!-- 候选人网格 -->
+    <div id="candidatesGrid" class="candidates-grid"></div>
+</div>
+
+<!-- 底部投票按钮 -->
+<div class="vote-fab" id="voteFab">
+    <button class="btn-vote disabled" id="btnVote" disabled>请选择一位选手</button>
+</div>
+
+<!-- 确认弹窗 -->
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal-dialog">
+        <h2>确认投票</h2>
+        <div class="modal-sub">每个设备仅限一票 · 不可更改</div>
+        <div class="modal-preview"><img id="modalPreviewImg" src="" alt=""></div>
+        <div class="modal-preview-name" id="modalPreviewName"></div>
+        <div class="modal-btns">
+            <button class="modal-btn cancel" id="btnCancel">取消</button>
+            <button class="modal-btn confirm" id="btnConfirm">确认投票</button>
+        </div>
+    </div>
+</div>
+
+<!-- 庆祝完成 -->
+<div class="celebrate-overlay" id="celebrateOverlay">
+    <div class="celebrate-icon">🏆</div>
+    <div class="celebrate-title">投票成功</div>
+    <div class="celebrate-sub">感谢你的参与</div>
+    <div class="celebrate-hint">REWRITE THE FUTURE</div>
+</div>
+
+<script>
+(function() {
+    // ── 13位候选人数据 ──
+    const candidates = [
+        { id: 1,  name: 'NO.1',  photo: 'images/马2.png' },
+        { id: 2,  name: 'NO.2',  photo: 'images/微信图片_20260701100010.png' },
+        { id: 3,  name: 'NO.3',  photo: 'images/微信图片_20260701100015.png' },
+        { id: 4,  name: 'NO.4',  photo: 'images/微信图片_20260701100021.png' },
+        { id: 5,  name: 'NO.5',  photo: 'images/微信图片_20260701100024.png' },
+        { id: 6,  name: 'NO.6',  photo: 'images/微信图片_20260701100027.png' },
+        { id: 7,  name: 'NO.7',  photo: 'images/微信图片_20260701100030.png' },
+        { id: 8,  name: 'NO.8',  photo: 'images/微信图片_20260701100033.png' },
+        { id: 9,  name: 'NO.9',  photo: 'images/微信图片_20260701100036.png' },
+        { id: 10, name: 'NO.10', photo: 'images/微信图片_20260701100039.png' },
+        { id: 11, name: 'NO.11', photo: 'images/微信图片_20260702110109_22_452.png' },
+        { id: 12, name: 'NO.12', photo: 'images/吴3.png' },
+        { id: 13, name: 'NO.13', photo: 'images/张涛1.png' }
+    ];
+
+    const STORAGE_KEY = '247fitness_vote_cast';
+    const STORAGE_CHOICE_KEY = '247fitness_vote_choice';
+
+    // ── 状态 ──
+    let selectedId = null;
+    let hasVoted = localStorage.getItem(STORAGE_KEY) === 'true';
+    let votedId = hasVoted ? parseInt(localStorage.getItem(STORAGE_CHOICE_KEY) || '0') : 0;
+
+    // ── DOM ──
+    const grid = document.getElementById('candidatesGrid');
+    const btnVote = document.getElementById('btnVote');
+    const statusBanner = document.getElementById('statusBanner');
+    const confirmModal = document.getElementById('confirmModal');
+    const celebrateOverlay = document.getElementById('celebrateOverlay');
+
+    // ── 渲染网格 ──
+    function renderGrid() {
+        grid.innerHTML = '';
+        candidates.forEach(c => {
+            const card = document.createElement('div');
+            card.className = 'candidate-card';
+            card.dataset.id = c.id;
+            if (c.id === votedId && hasVoted) card.classList.add('voted', 'selected');
+            if (c.id === selectedId && !hasVoted) card.classList.add('selected');
+
+            card.innerHTML = `
+                <div class="card-photo-wrap">
+                    <img src="${c.photo}" alt="${c.name}" loading="lazy">
+                    <div class="card-badge">${String(c.id).padStart(2,'0')}</div>
+                    <div class="card-check"></div>
+                </div>
+                <div class="card-info">
+                    <div class="card-name">${c.name}</div>
+                </div>
+            `;
+
+            if (!hasVoted) {
+                card.addEventListener('click', () => selectCandidate(c.id));
+            }
+            grid.appendChild(card);
+        });
+        updateButton();
+        updateBanner();
+    }
+
+    // ── 选择候选人 ──
+    function selectCandidate(id) {
+        if (hasVoted) return;
+        selectedId = (selectedId === id) ? null : id; // toggle off
+        document.querySelectorAll('.candidate-card').forEach(card => {
+            card.classList.toggle('selected', parseInt(card.dataset.id) === selectedId);
+        });
+        updateButton();
+
+        // 触觉反馈 (iOS)
+        if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(8);
+        }
+    }
+
+    // ── 更新按钮状态 ──
+    function updateButton() {
+        if (hasVoted) {
+            btnVote.className = 'btn-vote done';
+            const c = candidates.find(x => x.id === votedId);
+            btnVote.textContent = c ? '✓ 已投票 ' + c.name : '✓ 已投票';
+            return;
+        }
+        if (selectedId) {
+            btnVote.className = 'btn-vote ready';
+            const c = candidates.find(x => x.id === selectedId);
+            btnVote.textContent = '为 ' + (c ? c.name : '') + ' 投票';
+            btnVote.disabled = false;
+        } else {
+            btnVote.className = 'btn-vote disabled';
+            btnVote.textContent = '请选择一位选手';
+            btnVote.disabled = true;
+        }
+    }
+
+    // ── 状态横幅 ──
+    function updateBanner() {
+        if (hasVoted) {
+            const c = candidates.find(x => x.id === votedId);
+            statusBanner.className = 'status-banner success show';
+            statusBanner.textContent = '✓ 你已为 ' + (c ? c.name : '') + ' 投出宝贵一票';
+        } else {
+            statusBanner.className = 'status-banner';
+            statusBanner.textContent = '';
+        }
+    }
+
+    // ── 点击投票按钮 → 弹确认窗 ──
+    btnVote.addEventListener('click', () => {
+        if (!selectedId || hasVoted) return;
+        const c = candidates.find(x => x.id === selectedId);
+        if (!c) return;
+        document.getElementById('modalPreviewImg').src = c.photo;
+        document.getElementById('modalPreviewName').textContent = c.name;
+        confirmModal.classList.add('show');
+    });
+
+    // ── 取消 ──
+    document.getElementById('btnCancel').addEventListener('click', () => {
+        confirmModal.classList.remove('show');
+    });
+    confirmModal.addEventListener('click', (e) => {
+        if (e.target === confirmModal) confirmModal.classList.remove('show');
+    });
+
+    // ── 确认投票 ──
+    document.getElementById('btnConfirm').addEventListener('click', () => {
+        if (!selectedId || hasVoted) return;
+        hasVoted = true;
+        votedId = selectedId;
+        localStorage.setItem(STORAGE_KEY, 'true');
+        localStorage.setItem(STORAGE_CHOICE_KEY, String(votedId));
+
+        confirmModal.classList.remove('show');
+        selectedId = null;
+        renderGrid();
+
+        // 显示庆祝
+        setTimeout(() => {
+            celebrateOverlay.classList.add('show');
+        }, 300);
+
+        // 触觉反馈
+        if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate([20, 60, 20]);
+        }
+
+        // 这里可以添加发送投票到服务器的逻辑
+        // fetch('/api/vote', { method: 'POST', body: JSON.stringify({ candidateId: votedId }) });
+    });
+
+    // ── 点击庆祝层关闭 ──
+    celebrateOverlay.addEventListener('click', () => {
+        celebrateOverlay.classList.remove('show');
+    });
+
+    // ── 启动 ──
+    renderGrid();
+})();
+</script>
+</body>
+</html>
